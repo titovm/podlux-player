@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect, Fragment } from 'react';
+import { useState, useRef, useEffect, Fragment, useCallback } from 'react';
 import { Button } from './ui/button';
 import { Track } from '@/types/track';
 import { S3Item } from '@/types/s3-item';
@@ -39,6 +39,42 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
       url: item.url!,
       title: item.title
     }));
+
+  const handlePlay = useCallback(() => {
+    if (!soundRef.current) {
+      if (tracks.length > 0) {
+        playTrack(tracks[0]);
+      }
+      return;
+    }
+
+    if (isPlaying) {
+      soundRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      soundRef.current.play();
+      setIsPlaying(true);
+    }
+  }, [isPlaying, tracks]);
+
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handlePlay();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [handlePlay]);
 
   useEffect(() => {
     return () => {
@@ -111,21 +147,6 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
     
     soundRef.current.seek(newPosition);
     setProgress(newPosition);
-  };
-
-  const handlePlay = () => {
-    if (!soundRef.current) {
-      if (tracks.length > 0) {
-        playTrack(tracks[0]);
-      }
-      return;
-    }
-
-    if (isPlaying) {
-      soundRef.current.pause();
-    } else {
-      soundRef.current.play();
-    }
   };
 
   const skipTrack = (direction: 'prev' | 'next') => {
@@ -273,7 +294,7 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
 
             {/* Right side: Volume control and theme toggle */}
             <div className="flex items-center gap-2 shrink-0 ml-4">
-            <Button
+              <Button
                 variant="ghost"
                 size="icon"
                 onClick={toggleMute}
