@@ -10,8 +10,11 @@ import {
   Pause, 
   SkipBack, 
   SkipForward, 
-  Download 
+  Download,
+  Volume2,
+  VolumeX 
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface PlayerProps {
   initialItems: S3Item[];
@@ -25,6 +28,8 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
   const [duration, setDuration] = useState(0);
   const soundRef = useRef<Howl | null>(null);
   const progressInterval = useRef<NodeJS.Timer>();
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
 
   const tracks: Track[] = initialItems
     .filter(item => item.type === 'file')
@@ -49,46 +54,50 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
   };
 
   const playTrack = (track: Track) => {
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-    }
-    
-    soundRef.current?.stop();
-    
-    const sound = new Howl({
-      src: [track.url],
-      html5: true,
-      format: ['mp3'],
-      onplay: () => {
-        setIsPlaying(true);
-        setDuration(sound.duration());
-        
-        // Start progress tracking
-        progressInterval.current = setInterval(() => {
-          setProgress(sound.seek());
-        }, 1000);
-      },
-      onpause: () => {
-        setIsPlaying(false);
-        if (progressInterval.current) {
-          clearInterval(progressInterval.current);
-        }
-      },
-      onstop: () => {
-        setIsPlaying(false);
-        setProgress(0);
-        if (progressInterval.current) {
-          clearInterval(progressInterval.current);
-        }
-      },
-      onend: () => skipTrack('next'),
-      onloaderror: (id, error) => console.error('Loading error:', error),
-      onplayerror: (id, error) => console.error('Play error:', error),
-    });
+    try {
+      if (progressInterval.current) {
+        clearInterval(progressInterval.current);
+      }
+      
+      soundRef.current?.stop();
+      
+      const sound = new Howl({
+        src: [track.url],
+        html5: true,
+        format: ['mp3'],
+        volume: isMuted ? 0 : volume,
+        onplay: () => {
+          setIsPlaying(true);
+          setDuration(sound.duration());
+          progressInterval.current = setInterval(() => {
+            setProgress(sound.seek());
+          }, 1000);
+        },
+        onloaderror: (id, error) => {
+          console.error('Loading error:', error);
+          toast.error('Failed to load audio file');
+        },
+        onplayerror: (id, error) => {
+          console.error('Play error:', error);
+          toast.error('Failed to play audio file');
+        },
+        onstop: () => {
+          setIsPlaying(false);
+          setProgress(0);
+          if (progressInterval.current) {
+            clearInterval(progressInterval.current);
+          }
+        },
+        onend: () => skipTrack('next'),
+      });
 
-    soundRef.current = sound;
-    setCurrentTrack(track);
-    sound.play();
+      soundRef.current = sound;
+      setCurrentTrack(track);
+      sound.play();
+    } catch (error) {
+      console.error('Playback error:', error);
+      toast.error('An error occurred while playing the track');
+    }
   };
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -149,21 +158,46 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
 
     try {
       const response = await fetch(item.url!);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const blob = await response.blob();
       
-      // Create a temporary link element
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = item.title; // Set the filename
+      link.download = item.title;
       
-      // Append to document, click, and cleanup
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
+
+      toast.success('Download started');
     } catch (error) {
       console.error('Download failed:', error);
+      toast.error('Failed to download file');
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    if (soundRef.current) {
+      soundRef.current.volume(newVolume);
+    }
+    setIsMuted(newVolume === 0);
+  };
+
+  const toggleMute = () => {
+    if (soundRef.current) {
+      if (isMuted) {
+        soundRef.current.volume(volume);
+        setIsMuted(false);
+      } else {
+        soundRef.current.volume(0);
+        setIsMuted(true);
+      }
     }
   };
 
@@ -173,7 +207,8 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
       <div className="fixed top-0 left-0 right-0 bg-white shadow-md z-50">
         <div className="container mx-auto p-4">
           <div className="flex items-center gap-4 mb-2">
-            <div className="flex gap-2">
+            {/* Left side: Playback controls */}
+            <div className="flex gap-2 shrink-0">
               <Button 
                 variant="ghost" 
                 size="icon"
@@ -200,24 +235,51 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
               </Button>
             </div>
             
-            {currentTrack && (
-              <div className="flex-1">
-                <div className="text-sm font-medium">{currentTrack.title}</div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">{formatTime(progress)}</span>
-                  <div 
-                    className="flex-1 h-2 bg-gray-200 rounded cursor-pointer"
-                    onClick={handleProgressClick}
-                  >
+            {/* Middle: Track info and progress */}
+            <div className="flex-1 min-w-0"> {/* Add min-w-0 to allow proper text truncation */}
+              {currentTrack ? (
+                <>
+                  <div className="text-sm font-medium truncate">{currentTrack.title}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 shrink-0">{formatTime(progress)}</span>
                     <div 
-                      className="h-full bg-blue-500 rounded"
-                      style={{ width: `${(progress / duration) * 100}%` }}
-                    />
+                      className="flex-1 h-2 bg-gray-200 rounded cursor-pointer"
+                      onClick={handleProgressClick}
+                    >
+                      <div 
+                        className="h-full bg-blue-500 rounded"
+                        style={{ width: `${(progress / duration) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-gray-500 shrink-0">{formatTime(duration)}</span>
                   </div>
-                  <span className="text-xs text-gray-500">{formatTime(duration)}</span>
-                </div>
-              </div>
-            )}
+                </>
+              ) : (
+                <div className="text-sm text-gray-500">No track selected</div>
+              )}
+            </div>
+
+            {/* Right side: Volume control */}
+            <div className="flex items-center gap-2 shrink-0 ml-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleMute}
+                title={isMuted ? 'Unmute' : 'Mute'}
+              >
+                {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+              </Button>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={volume}
+                onChange={handleVolumeChange}
+                className="w-24 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                title={`Volume: ${Math.round(volume * 100)}%`}
+              />
+            </div>
           </div>
         </div>
       </div>
