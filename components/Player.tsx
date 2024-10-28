@@ -273,6 +273,18 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
 
             {/* Right side: Volume control and theme toggle */}
             <div className="flex items-center gap-2 shrink-0 ml-4">
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleMute}
+                className="dark:hover:bg-gray-800"
+              >
+                {isMuted ? (
+                  <VolumeX size={24} className="dark:text-gray-200" />
+                ) : (
+                  <Volume2 size={24} className="dark:text-gray-200" />
+                )}
+              </Button>
               <input
                 type="range"
                 min="0"
@@ -290,7 +302,7 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
       </div>
 
       {/* Scrollable file list */}
-      <div className="container mx-auto pt-4 pb-4 min-h-screen dark:bg-gray-900">
+      <div className="container mx-auto p-4 min-h-screen dark:bg-gray-900">
         <div className="flex flex-col gap-2">
           <h2 className="text-xl font-bold dark:text-gray-200">Tracks</h2>
           {initialItems.map(item => (

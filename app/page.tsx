@@ -29,7 +29,7 @@ export default function Home() {
       {currentPrefix && (
         <button
           onClick={goBack}
-          className="mb-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded flex items-center gap-2"
+          className="flex items-center gap-1 mb-4 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-200"
         >
           ⬅️ Back
         </button>
