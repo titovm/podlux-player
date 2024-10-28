@@ -19,13 +19,13 @@ interface S3Item {
   url?: string;
 }
 
-export async function listItems(prefix: string = ''): Promise<S3Item[]> {
+export async function listItems(prefix: string = 'MP3/'): Promise<S3Item[]> {
   // Decode the incoming prefix (it might be encoded from the URL)
   const decodedPrefix = decodeURIComponent(prefix);
   
   const command = new ListObjectsV2Command({
     Bucket: process.env.NEXT_PUBLIC_WASABI_BUCKET!,
-    Prefix: decodedPrefix,
+    Prefix: decodedPrefix.startsWith('MP3/') ? decodedPrefix : `MP3/${decodedPrefix}`,
     Delimiter: '/'
   });
   

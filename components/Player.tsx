@@ -15,6 +15,7 @@ import {
   VolumeX 
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ThemeToggle } from "./ThemeToggle"
 
 interface PlayerProps {
   initialItems: S3Item[];
@@ -204,7 +205,7 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
   return (
     <Fragment>
       {/* Fixed player at top */}
-      <div className="fixed top-0 left-0 right-0 bg-white shadow-md z-50">
+      <div className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-900 shadow-md z-50">
         <div className="container mx-auto p-4">
           <div className="flex items-center gap-4 mb-2">
             {/* Left side: Playback controls */}
@@ -214,61 +215,64 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
                 size="icon"
                 onClick={() => skipTrack('prev')}
                 title="Previous"
+                className="dark:hover:bg-gray-800"
               >
-                <SkipBack size={24} />
+                <SkipBack size={24} className="dark:text-gray-200" />
               </Button>
               <Button 
                 variant="ghost"
                 size="icon"
                 onClick={handlePlay}
                 title={isPlaying ? 'Pause' : 'Play'}
+                className="dark:hover:bg-gray-800"
               >
-                {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                {isPlaying ? <Pause size={24} className="dark:text-gray-200" /> : <Play size={24} className="dark:text-gray-200" />}
               </Button>
               <Button 
                 variant="ghost"
                 size="icon"
                 onClick={() => skipTrack('next')}
                 title="Next"
+                className="dark:hover:bg-gray-800"
               >
-                <SkipForward size={24} />
+                <SkipForward size={24} className="dark:text-gray-200" />
               </Button>
             </div>
             
             {/* Middle: Track info and progress */}
-            <div className="flex-1 min-w-0"> {/* Add min-w-0 to allow proper text truncation */}
+            <div className="flex-1 min-w-0">
               {currentTrack ? (
                 <>
-                  <div className="text-sm font-medium truncate">{currentTrack.title}</div>
+                  <div className="text-sm font-medium truncate dark:text-gray-200">
+                    {currentTrack.title}
+                  </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500 shrink-0">{formatTime(progress)}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                      {formatTime(progress)}
+                    </span>
                     <div 
-                      className="flex-1 h-2 bg-gray-200 rounded cursor-pointer"
+                      className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded cursor-pointer"
                       onClick={handleProgressClick}
                     >
                       <div 
-                        className="h-full bg-blue-500 rounded"
+                        className="h-full bg-blue-500 dark:bg-blue-400 rounded"
                         style={{ width: `${(progress / duration) * 100}%` }}
                       />
                     </div>
-                    <span className="text-xs text-gray-500 shrink-0">{formatTime(duration)}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                      {formatTime(duration)}
+                    </span>
                   </div>
                 </>
               ) : (
-                <div className="text-sm text-gray-500">No track selected</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  No track selected
+                </div>
               )}
             </div>
 
-            {/* Right side: Volume control */}
+            {/* Right side: Volume control and theme toggle */}
             <div className="flex items-center gap-2 shrink-0 ml-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleMute}
-                title={isMuted ? 'Unmute' : 'Mute'}
-              >
-                {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
-              </Button>
               <input
                 type="range"
                 min="0"
@@ -276,24 +280,26 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
                 step="0.01"
                 value={volume}
                 onChange={handleVolumeChange}
-                className="w-24 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                className="w-24 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
                 title={`Volume: ${Math.round(volume * 100)}%`}
               />
+              <ThemeToggle />
             </div>
           </div>
         </div>
       </div>
 
       {/* Scrollable file list */}
-      <div className="container mx-auto px-4 pt-24 pb-4 min-h-screen">
+      <div className="container mx-auto pt-4 pb-4 min-h-screen dark:bg-gray-900">
         <div className="flex flex-col gap-2">
-          <h2 className="text-xl font-bold">Tracks</h2>
+          <h2 className="text-xl font-bold dark:text-gray-200">Tracks</h2>
           {initialItems.map(item => (
             <div
               key={item.key}
-              className={`flex items-center justify-between hover:bg-gray-100 p-2 rounded ${
-                currentTrack?.key === item.key ? 'bg-gray-100' : ''
-              } ${item.type === 'folder' ? 'font-semibold' : ''}`}
+              className={`flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded 
+                ${currentTrack?.key === item.key ? 'bg-gray-100 dark:bg-gray-800' : ''} 
+                ${item.type === 'folder' ? 'font-semibold' : ''} 
+                dark:text-gray-200`}
             >
               <button
                 onClick={() => handleItemClick(item)}
@@ -304,7 +310,7 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
               {item.type === 'file' && (
                 <button
                   onClick={(e) => handleDownload(e, item)}
-                  className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                 >
                   <Download size={18} />
                 </button>
