@@ -1,36 +1,22 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+### MP3 player
 
-## Getting Started
+This is a next.js project that uses the shadcn/ui library. It is a simple mp3 player that allows you to play, pause, and skip tracks. You can browse a S3 bucket of mp3 files and play them. The S3 path is hardcoded to the bucket that contains the mp3 files for this project. It is deployed to AWS CloudFront. Optionally add user authentication.
 
-First, run the development server:
+### How to run
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Clone the repo
+2. Run `npm install`
+3. Run `npm run dev`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### How to use
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Click on the "Browse" button to see a list of mp3 files in the S3 bucket.
+2. Click on a file to play it.
+3. Use the play/pause button to play or pause the current track.
+4. Use the skip buttons to skip to the next or previous track.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### How to deploy
 
-## Learn More
+1. Run `npm run build`
+2. Run `npm run deploy`
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
