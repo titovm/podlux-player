@@ -33,6 +33,11 @@ export default function RootLayout({
         <ThemeProvider attribute="class">
           {children}
         </ThemeProvider>
+        <footer className="text-center text-sm p-8 mt-8 bg-gray-100 dark:bg-gray-800">
+          <p>
+            Made with ❤️ by <a href="https://github.com/titovm" target="_blank" rel="noopener noreferrer">titovm</a>
+          </p>
+        </footer>
         <Toaster 
           position="top-right" 
           toastOptions={{

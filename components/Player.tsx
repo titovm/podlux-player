@@ -51,9 +51,20 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
     if (isPlaying) {
       soundRef.current.pause();
       setIsPlaying(false);
+      if (progressInterval.current) {
+        clearInterval(progressInterval.current);
+        progressInterval.current = undefined;
+      }
     } else {
       soundRef.current.play();
       setIsPlaying(true);
+      if (!progressInterval.current) {
+        progressInterval.current = setInterval(() => {
+          if (soundRef.current) {
+            setProgress(soundRef.current.seek());
+          }
+        }, 1000);
+      }
     }
   }, [isPlaying, tracks]);
 
@@ -323,7 +334,7 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
       </div>
 
       {/* Scrollable file list */}
-      <div className="container mx-auto p-4 min-h-screen dark:bg-gray-900">
+      <div className="container mx-auto p-4 min-h-screen rounded-lg dark:bg-gray-900">
         <div className="flex flex-col gap-2">
           <h2 className="text-xl font-bold dark:text-gray-200">Tracks</h2>
           {initialItems.map(item => (
