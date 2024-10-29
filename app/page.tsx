@@ -11,7 +11,12 @@ export default function Home() {
   useEffect(() => {
     const fetchItems = async () => {
       const result = await listItems(currentPrefix);
-      setItems(result);
+      // Ensure result items have required url property
+      const validItems = result.map(item => ({
+        ...item,
+        url: item.url || '' // Provide default empty string if url is undefined
+      }));
+      setItems(validItems);
     };
     
     fetchItems();
