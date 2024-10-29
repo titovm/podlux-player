@@ -23,7 +23,7 @@ export async function listItems(prefix: string = 'MP3/'): Promise<S3Item[]> {
   const decodedPrefix = decodeURIComponent(prefix);
   
   const command = new ListObjectsV2Command({
-    Bucket: process.env.NEXT_PUBLIC_WASABI_BUCKET!,
+    Bucket: 'podlux',//process.env.NEXT_PUBLIC_WASABI_BUCKET!,
     Prefix: decodedPrefix.startsWith('MP3/') ? decodedPrefix : `MP3/${decodedPrefix}`,
     Delimiter: '/'
   });
