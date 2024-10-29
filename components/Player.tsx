@@ -52,7 +52,7 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
       soundRef.current.pause();
       setIsPlaying(false);
       if (progressInterval.current) {
-        clearInterval(progressInterval.current);
+        clearInterval(progressInterval.current as NodeJS.Timeout);
         progressInterval.current = undefined;
       }
     } else {
@@ -90,7 +90,7 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
   useEffect(() => {
     return () => {
       if (progressInterval.current) {
-        clearInterval(progressInterval.current);
+        clearInterval(progressInterval.current as NodeJS.Timeout);
       }
     };
   }, []);
@@ -104,7 +104,7 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
   const playTrack = (track: Track) => {
     try {
       if (progressInterval.current) {
-        clearInterval(progressInterval.current);
+        clearInterval(progressInterval.current as NodeJS.Timeout);
       }
       
       soundRef.current?.stop();
@@ -133,7 +133,7 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
           setIsPlaying(false);
           setProgress(0);
           if (progressInterval.current) {
-            clearInterval(progressInterval.current);
+            clearInterval(progressInterval.current as NodeJS.Timeout);
           }
         },
         onend: () => skipTrack('next'),
