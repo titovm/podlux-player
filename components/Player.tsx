@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect, Fragment, useCallback } from 'react';
+import { Fragment, useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from './ui/button';
 import { Track } from '@/types/track';
 import { S3Item } from '@/types/s3-item';
@@ -28,123 +28,76 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const soundRef = useRef<Howl | null>(null);
-  const progressInterval = useRef<NodeJS.Timer>();
+  const progressInterval = useRef<NodeJS.Timeout>();
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
 
-  const tracks: Track[] = initialItems
-    .filter(item => item.type === 'file')
-    .map(item => ({
-      key: item.key,
-      url: item.url!,
-      title: item.title
-    }));
-
-  const handlePlay = useCallback(() => {
-    if (!soundRef.current) {
-      if (tracks.length > 0) {
-        playTrack(tracks[0]);
-      }
-      return;
-    }
-
-    if (isPlaying) {
-      soundRef.current.pause();
-      setIsPlaying(false);
-      if (progressInterval.current) {
-        clearInterval(progressInterval.current as NodeJS.Timeout);
-        progressInterval.current = undefined;
-      }
-    } else {
-      soundRef.current.play();
-      setIsPlaying(true);
-      if (!progressInterval.current) {
-        progressInterval.current = setInterval(() => {
-          if (soundRef.current) {
-            setProgress(soundRef.current.seek());
-          }
-        }, 1000);
-      }
-    }
-  }, [isPlaying, tracks]);
+  const handleTrackEnd = useCallback(() => {
+    const currentIndex = initialItems.findIndex(item => item.url === currentTrack?.url);
+    if (currentIndex === -1) return;
+    const isLastTrack = currentIndex === initialItems.length - 1;
+    const nextIndex = isLastTrack ? 0 : currentIndex + 1;
+    const nextTrack = initialItems[nextIndex];
+    setCurrentTrack(nextTrack);
+  }, [currentTrack, initialItems]);
 
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
+    if (currentTrack) {
+      // Stop and unload previous Howl instance
+      if (soundRef.current) {
+        soundRef.current.off(); // Remove all event handlers
+        soundRef.current.stop();
+        soundRef.current.unload();
+        soundRef.current = null;
       }
-      
-      if (e.code === 'Space') {
-        e.preventDefault();
-        handlePlay();
-      }
-    };
 
-    window.addEventListener('keydown', handleKeyPress);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [handlePlay]);
-
-  useEffect(() => {
-    return () => {
-      if (progressInterval.current) {
-        clearInterval(progressInterval.current as NodeJS.Timeout);
-      }
-    };
-  }, []);
-
-  const formatTime = (secs: number) => {
-    const minutes = Math.floor(secs / 60);
-    const seconds = Math.floor(secs % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const playTrack = (track: Track) => {
-    try {
-      if (progressInterval.current) {
-        clearInterval(progressInterval.current as NodeJS.Timeout);
-      }
-      
-      soundRef.current?.stop();
-      
+      // Create new Howl instance
       const sound = new Howl({
-        src: [track.url],
-        html5: true,
-        format: ['mp3'],
+        src: [currentTrack.url],
         volume: isMuted ? 0 : volume,
-        onplay: () => {
-          setIsPlaying(true);
-          setDuration(sound.duration());
-          progressInterval.current = setInterval(() => {
-            setProgress(sound.seek());
-          }, 1000);
-        },
-        onloaderror: (id, error) => {
-          console.error('Loading error:', error);
-          toast.error('Failed to load audio file');
-        },
-        onplayerror: (id, error) => {
-          console.error('Play error:', error);
-          toast.error('Failed to play audio file');
-        },
-        onstop: () => {
-          setIsPlaying(false);
-          setProgress(0);
-          if (progressInterval.current) {
-            clearInterval(progressInterval.current as NodeJS.Timeout);
-          }
-        },
-        onend: () => skipTrack('next'),
+        onend: handleTrackEnd,
       });
 
       soundRef.current = sound;
-      setCurrentTrack(track);
       sound.play();
-    } catch (error) {
-      console.error('Playback error:', error);
-      toast.error('An error occurred while playing the track');
+      setIsPlaying(true);
+
+      // Update progress and duration
+      const updateProgress = () => {
+        if (sound.playing()) {
+          setProgress(sound.seek() as number);
+          setDuration(sound.duration());
+        }
+      };
+
+      // Start progress interval
+      progressInterval.current = setInterval(updateProgress, 1000);
+
+      return () => {
+        // Clean up
+        if (progressInterval.current) {
+          clearInterval(progressInterval.current);
+          progressInterval.current = undefined;
+        }
+        if (soundRef.current) {
+          soundRef.current.off();
+          soundRef.current.stop();
+          soundRef.current.unload();
+          soundRef.current = null;
+        }
+      };
+    }
+  }, [currentTrack, handleTrackEnd, isMuted, volume]);
+
+  const handlePlayPause = () => {
+    if (soundRef.current) {
+      if (isPlaying) {
+        soundRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        soundRef.current.play();
+        setIsPlaying(true);
+      }
     }
   };
 
@@ -163,13 +116,13 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
   const skipTrack = (direction: 'prev' | 'next') => {
     if (!currentTrack) return;
     
-    const currentIndex = tracks.findIndex(t => t.key === currentTrack.key);
+    const currentIndex = initialItems.findIndex(t => t.url === currentTrack.url);
     let nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
     
-    if (nextIndex >= tracks.length) nextIndex = 0;
-    if (nextIndex < 0) nextIndex = tracks.length - 1;
+    if (nextIndex >= initialItems.length) nextIndex = 0;
+    if (nextIndex < 0) nextIndex = initialItems.length - 1;
     
-    playTrack(tracks[nextIndex]);
+    setCurrentTrack(initialItems[nextIndex]);
   };
 
   const handleItemClick = (item: S3Item) => {
@@ -181,7 +134,7 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
         url: item.url!,
         title: item.title
       };
-      playTrack(track);
+      setCurrentTrack(track);
     }
   };
 
@@ -234,6 +187,12 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
     }
   };
 
+  const formatTime = (secs: number) => {
+    const minutes = Math.floor(secs / 60);
+    const seconds = Math.floor(secs % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   return (
     <Fragment>
       {/* Fixed player at top */}
@@ -254,7 +213,7 @@ export function Player({ initialItems, onFolderClick }: PlayerProps) {
               <Button 
                 variant="ghost"
                 size="icon"
-                onClick={handlePlay}
+                onClick={handlePlayPause}
                 title={isPlaying ? 'Pause' : 'Play'}
                 className="dark:hover:bg-gray-800"
               >
